@@ -15,6 +15,9 @@ var io = socketIO(server);
 io.on("connection",(socket)=>{
     console.log("New User Connected");
 
+    socket.emit("newMessage",{from:"Admin",text:"Welcome to the chat App"});
+    socket.broadcast.emit("newMessage",{from:"Server",text:"New user has joined",createdAt:new Date().getTime})
+
     // socket.emit("newEmail",{
     //     from:"billgates@microsoft.com",
     //     text:"My all wealth is yours"
@@ -26,13 +29,20 @@ io.on("connection",(socket)=>{
     //     createdAt:"Today"
     // })
 
-    socket.on("createMessage",(message)=>{
+    socket.on("createMessage",(message,callback)=>{
         //console.log("Create message",message)
-        io.emit("new message bhadwe",{
+        io.emit("newMessage",{
             from:message.from,
             text:message.text,
             createdAt:new Date().getTime
-        })
+        });
+        callback("This is from server")
+        // socket.broadcast.emit("newMessage",{
+        //     from:message.from,
+        //     text:message.text,
+        //     createdAt:new Date().getTime
+        // })
+
     })
     // socket.on("createEmail",(createEmail)=>{
     //     console.log("create Email",createEmail)
