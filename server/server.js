@@ -2,6 +2,7 @@ const path = require("path");
 const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
+const moment = require('moment');
 
 var constPath  = path.join(__dirname,'../public');
 const port = process.env.PORT||3000
@@ -12,6 +13,16 @@ const port = process.env.PORT||3000
 const app = express();
 const server = http.createServer(app);
 var io = socketIO(server);
+
+var generateLocationMessage=(from ,latitude ,longitude)=>{
+    return{
+        from,
+        url:`https://www.google.com/maps?q=${latitude},${longitude}`,
+        createdAt:moment().valueOf()
+    }
+
+};
+
 io.on("connection",(socket)=>{
     console.log("New User Connected");
 
@@ -34,7 +45,7 @@ io.on("connection",(socket)=>{
         io.emit("newMessage",{
             from:message.from,
             text:message.text,
-            createdAt:new Date().getTime
+            createdAt:moment().valueOf()
         });
         callback("This is from server")
         // socket.broadcast.emit("newMessage",{
@@ -44,10 +55,14 @@ io.on("connection",(socket)=>{
         // })
 
     })
-    // socket.on("createEmail",(createEmail)=>{
+
+    socket.on("createCurrentLocation",(coords)=>{
+        io.emit("createLocationMessage",generateLocationMessage("Admin",coords.latitude,coords.longitude))
+        // socket.on("createEmail",(createEmail)=>{
     //     console.log("create Email",createEmail)
     // })
 
+    })
     socket.on("disconnect",()=>{
         console.log("User Disconnected");
     })
@@ -59,6 +74,8 @@ app.use(express.static(constPath))
 server.listen(port,()=>{
     console.log(`Listening on port ${port}`)
 })
+
+
 
 
 
