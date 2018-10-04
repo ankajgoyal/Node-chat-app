@@ -5,6 +5,7 @@ const socketIO = require("socket.io");
 const moment = require('moment');
 
 var constPath  = path.join(__dirname,'../public');
+const {Users} = require('./utils/users')
 const port = process.env.PORT||3000
 
 //console.log(__dirname);
@@ -13,6 +14,7 @@ const port = process.env.PORT||3000
 const app = express();
 const server = http.createServer(app);
 var io = socketIO(server);
+var users = new Users();
 
 var generateLocationMessage=(from ,latitude ,longitude)=>{
     return{
@@ -23,12 +25,28 @@ var generateLocationMessage=(from ,latitude ,longitude)=>{
 
 };
 
+var isRealString = (str)=>{
+    return typeof str==="string" && str.trim().length>0;
+};
+
 io.on("connection",(socket)=>{
     console.log("New User Connected");
 
-    socket.emit("newMessage",{from:"Admin",text:"Welcome to the chat App"});
-    socket.broadcast.emit("newMessage",{from:"Server",text:"New user has joined",createdAt:new Date().getTime})
+   
 
+    socket.on('join',(params,callback)=>{
+        if(!isRealString(params.name)|| ! isRealString(params.room)){
+             return callback("Name and Room are Required")
+        }
+        socket.join(params.room);
+        users.removeUser(socket.id);
+        users.addUser(socket.id ,params.name,params.room);
+        io.to(params.room).emit("usersUpdatedList",users.getUserList(params.room))
+
+        socket.emit("newMessage",{from:"Admin",text:"Welcome to the chat App"});
+        socket.broadcast.to(params.room).emit("newMessage",{from:"Server",text: `${params.name} has joined`,createdAt:new Date().getTime})
+        callback();
+    })
     // socket.emit("newEmail",{
     //     from:"billgates@microsoft.com",
     //     text:"My all wealth is yours"
@@ -64,7 +82,12 @@ io.on("connection",(socket)=>{
 
     })
     socket.on("disconnect",()=>{
-        console.log("User Disconnected");
+        var user = users.removeUser(socket.id);
+        if(user){
+            io.to(user.room).emit('usersUpdatedList',users.getUserList(user.room))
+            io.to(user.room).emit("newMessage",{from:"Admin",text:`${user.name } has left`,createdAt:new Date().getTime})
+        }
+
     })
 
 })

@@ -15,8 +15,16 @@ function scrollToBottom(){
 }
 
 socket.on("connect",()=>{
-    console.log("Connected to Server")
-
+    var params = jQuery.deparam(window.location.search);
+    socket.emit('join',params,function(err){
+        if(err){
+            alert(err);
+            window.location.href='/'
+        }
+        else{
+            console.log("No error");
+        }
+    })
     // socket.emit("createEmail",{
     //     to:"billgates@microsoft.com",
     //     text:"You are very kind"
@@ -64,6 +72,15 @@ socket.on("createLocationMessage",function(message){
     jQuery("#messages").append(html);
     scrollToBottom();
 
+})
+
+socket.on("usersUpdatedList",function(users){
+    console.log(users);
+var ol = jQuery('<ol></ol>');
+users.forEach(function(user){
+    ol.append(jQuery("<li></li>").text(user))
+})
+jQuery("#users").html(ol);
 })
 
 socket.on("Welcome",()=>{
